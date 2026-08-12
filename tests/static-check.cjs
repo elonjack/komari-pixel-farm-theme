@@ -13,7 +13,7 @@ assert(manifest.short === "pixel-farm", "Theme short identifier must be pixel-fa
 assert(fs.existsSync(path.join(root, "dist", "index.html")), "dist/index.html is required.");
 assert(html.includes('id="farm-canvas"'), "The responsive tile-map canvas is required.");
 assert(html.includes('id="ping-tasks"'), "The Ping task detail panel is required.");
-assert(fs.existsSync(path.join(root, "dist", "assets", "farm-map-v2.png")), "The original farm map artwork is required.");
+assert(fs.existsSync(path.join(root, "dist", "assets", "farm-map-v3.png")), "The naturalistic farm map artwork is required.");
 assert(html.includes("<title>Komari Monitor</title>"), "Komari title placeholder is required.");
 assert(html.includes('content="A simple server monitor tool."'), "Komari description placeholder is required.");
 assert(html.includes("Powered by Komari Monitor."), "Komari attribution is required.");

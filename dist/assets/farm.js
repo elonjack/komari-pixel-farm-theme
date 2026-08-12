@@ -333,12 +333,12 @@
   // The six coordinates correspond to the deliberately empty farm plots in the map artwork.
   // Extra nodes reuse a plot until a later map pack adds more land; they are never sent to an external layout service.
   const FIELD_LAYOUTS = Object.freeze([
-    { left: 33.0, top: 12.0, width: 23.5, height: 20.5 },
-    { left: 67.3, top: 14.5, width: 23.2, height: 20.3 },
-    { left: 11.2, top: 38.5, width: 22.4, height: 20.2 },
-    { left: 35.3, top: 40.1, width: 23.0, height: 20.0 },
-    { left: 67.1, top: 45.4, width: 23.1, height: 20.3 },
-    { left: 49.5, top: 67.4, width: 22.6, height: 20.0 }
+    { left: 28.4, top: 22.4, width: 18.4, height: 18.2 },
+    { left: 49.0, top: 22.5, width: 18.4, height: 18.2 },
+    { left: 69.4, top: 22.3, width: 18.5, height: 18.3 },
+    { left: 28.6, top: 47.2, width: 18.3, height: 18.0 },
+    { left: 49.1, top: 47.2, width: 18.4, height: 18.0 },
+    { left: 69.6, top: 47.0, width: 18.5, height: 18.1 }
   ]);
 
   function layoutFor(index) { return FIELD_LAYOUTS[index % FIELD_LAYOUTS.length]; }

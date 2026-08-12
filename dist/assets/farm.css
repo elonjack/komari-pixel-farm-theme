@@ -53,7 +53,7 @@ h1 { margin-bottom: 0; font-family: Georgia, "Microsoft YaHei", serif; font-size
 .section-heading { justify-content: space-between; margin-bottom: 1rem; padding: .7rem .85rem; border: 3px solid #5c4130; box-shadow: 3px 3px 0 rgb(54 37 25 / .4); background: rgb(255 248 222 / .92); }
 .section-heading h2 { margin-bottom: 0; font-family: Georgia, "Microsoft YaHei", serif; font-size: 1.35rem; }
 .section-heading p { margin: 0; color: var(--muted); font-size: .86rem; }
-.farm-map { position: relative; aspect-ratio: 3 / 2; min-height: 520px; overflow: hidden; border: 5px solid #5c4130; background: #6b9e46 url("./farm-map-v2.png") center / cover no-repeat; box-shadow: inset 0 0 0 4px #c6df82; }
+.farm-map { position: relative; aspect-ratio: 3 / 2; min-height: 520px; overflow: hidden; border: 5px solid #3b3127; background: #394b33 url("./farm-map-v3.png") center / cover no-repeat; box-shadow: inset 0 0 0 4px #8b7652; }
 .farm-canvas { display: none; }
 .farm-grid { position: absolute; z-index: 1; inset: 0; }
 .plot-card { position: absolute; left: var(--plot-left); top: var(--plot-top); width: var(--plot-width); height: var(--plot-height); overflow: visible; background: transparent; border: 0; box-shadow: none; outline: 0; }
@@ -72,11 +72,11 @@ h1 { margin-bottom: 0; font-family: Georgia, "Microsoft YaHei", serif; font-size
 .crop.corn::after { height: 1.65rem; border-radius: 45% 45% 35% 35%; background: #f4c951; }
 .crop.turnip::after { width: 1.55rem; height: 1.25rem; border-radius: 45% 45% 40% 40%; background: #efd7e4; }
 .status-alert .crop::after { background-color: #9a7443; } .status-unknown .crop { opacity: .5; filter: grayscale(.6); }
-.plot-sign { position: absolute; z-index: 3; bottom: 2%; left: 3%; width: min(78%, 13rem); min-height: 3rem; cursor: pointer; padding: .32rem .44rem; text-align: left; color: #2e2117; background: linear-gradient(#e9c480, #b87c45); border: 2px solid #563a26; box-shadow: 2px 2px 0 #55351f; }
-.plot-sign:hover { filter: brightness(1.12); transform: translate(-1px, -1px); }
+.plot-sign { position: absolute; z-index: 3; bottom: 1%; left: 3%; width: min(82%, 13rem); min-height: 3rem; cursor: pointer; padding: .32rem .44rem; text-align: left; color: #eaddbb; background: linear-gradient(#604735, #2d251f); border: 2px solid #b38a58; box-shadow: 2px 2px 0 rgb(18 15 12 / .8); text-shadow: 1px 1px 0 #17130f; }
+.plot-sign:hover { filter: brightness(1.2); transform: translate(-1px, -1px); }
 .plot-name { display: block; overflow: hidden; font-family: Georgia, "Microsoft YaHei", serif; font-size: clamp(.68rem, 1.2vw, .94rem); font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
-.plot-meta { display: flex; justify-content: space-between; gap: .32rem; margin-top: .12rem; color: #4e3827; font-size: clamp(.52rem, .9vw, .66rem); }
-.plot-network { display: block; overflow: hidden; margin-top: .12rem; color: #33261c; font-size: clamp(.5rem, .82vw, .63rem); font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
+.plot-meta { display: flex; justify-content: space-between; gap: .32rem; margin-top: .12rem; color: #d9c399; font-size: clamp(.52rem, .9vw, .66rem); }
+.plot-network { display: block; overflow: hidden; margin-top: .12rem; color: #f0d49a; font-size: clamp(.5rem, .82vw, .63rem); font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
 .health-badge { position: absolute; z-index: 4; top: 1%; left: 2%; padding: .18rem .28rem; color: #fff9dc; border: 2px solid var(--line); background: var(--good); font-size: clamp(.5rem, .9vw, .68rem); font-weight: 800; }
 .status-watch .health-badge { background: var(--watch); } .status-alert .health-badge { background: var(--alert); } .status-unknown .health-badge { background: var(--unknown); }
 .empty-state { max-width: 38rem; margin: 2.5rem auto; padding: 2rem; text-align: center; background: var(--paper); }.empty-state h2 { margin-bottom: .5rem; }.empty-state p { line-height: 1.6; }.empty-icon { margin-bottom: .2rem; color: var(--grass-shadow); font-size: 2rem; }
