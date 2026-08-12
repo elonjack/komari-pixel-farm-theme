@@ -33,7 +33,42 @@
     pingTasks: document.getElementById("ping-tasks")
   };
 
+  const farmMap = document.getElementById("farm-map");
+  const sceneButtons = Array.from(document.querySelectorAll(".scene-button"));
+  const SCENE_STORAGE_KEY = "komari-pixel-farm-scene-v1";
+  const SCENE_SEASONS = new Set(["spring", "summer", "autumn", "winter"]);
+  const SCENE_TIMES = new Set(["day", "night"]);
+
   const state = { nodes: [], snapshots: new Map(), pings: new Map(), settings: {}, loading: false, timer: null, lastLoaded: null };
+
+  function readScenePreference() {
+    try {
+      const saved = JSON.parse(window.localStorage.getItem(SCENE_STORAGE_KEY) || "{}");
+      return {
+        season: SCENE_SEASONS.has(saved?.season) ? saved.season : "summer",
+        time: SCENE_TIMES.has(saved?.time) ? saved.time : "day"
+      };
+    } catch { return { season: "summer", time: "day" }; }
+  }
+
+  function applyScene(scene, persist = true) {
+    if (!farmMap) return;
+    const next = {
+      season: SCENE_SEASONS.has(scene?.season) ? scene.season : "summer",
+      time: SCENE_TIMES.has(scene?.time) ? scene.time : "day"
+    };
+    farmMap.dataset.season = next.season;
+    farmMap.dataset.time = next.time;
+    for (const button of sceneButtons) {
+      const key = button.dataset.season ? "season" : "time";
+      const active = button.dataset[key] === next[key];
+      button.classList.toggle("is-active", active);
+      button.setAttribute("aria-pressed", String(active));
+    }
+    if (persist) {
+      try { window.localStorage.setItem(SCENE_STORAGE_KEY, JSON.stringify(next)); } catch { /* Scene preferences are optional. */ }
+    }
+  }
 
   function seeded(seed) {
     let value = seed >>> 0;
@@ -330,15 +365,15 @@
     return ["turnip", "tomato", "blueberry", "corn"][Math.abs(hash) % 4];
   }
 
-  // The six coordinates correspond to the deliberately empty farm plots in the map artwork.
+  // The six coordinates correspond to the deliberately empty farm plots in the original map artwork.
   // Extra nodes reuse a plot until a later map pack adds more land; they are never sent to an external layout service.
   const FIELD_LAYOUTS = Object.freeze([
-    { left: 28.4, top: 22.4, width: 18.4, height: 18.2 },
-    { left: 49.0, top: 22.5, width: 18.4, height: 18.2 },
-    { left: 69.4, top: 22.3, width: 18.5, height: 18.3 },
-    { left: 28.6, top: 47.2, width: 18.3, height: 18.0 },
-    { left: 49.1, top: 47.2, width: 18.4, height: 18.0 },
-    { left: 69.6, top: 47.0, width: 18.5, height: 18.1 }
+    { left: 20.6, top: 37.2, width: 18.7, height: 20.3 },
+    { left: 40.7, top: 37.2, width: 18.7, height: 20.3 },
+    { left: 60.6, top: 37.2, width: 18.7, height: 20.3 },
+    { left: 20.6, top: 60.5, width: 18.7, height: 20.8 },
+    { left: 40.7, top: 60.5, width: 18.7, height: 20.8 },
+    { left: 60.6, top: 60.5, width: 18.7, height: 20.8 }
   ]);
 
   function layoutFor(index) { return FIELD_LAYOUTS[index % FIELD_LAYOUTS.length]; }
@@ -574,6 +609,14 @@
 
   elements.refresh.addEventListener("click", () => loadFarm(true));
   elements.emptyRefresh.addEventListener("click", () => loadFarm(true));
+  sceneButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      const current = readScenePreference();
+      if (button.dataset.season) current.season = button.dataset.season;
+      if (button.dataset.time) current.time = button.dataset.time;
+      applyScene(current);
+    });
+  });
   elements.closeDialog.addEventListener("click", () => elements.dialog.close());
   elements.dialog.addEventListener("click", (event) => { if (event.target === elements.dialog) elements.dialog.close(); });
   document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && state.lastLoaded && Date.now() - state.lastLoaded > 60000) loadFarm(false); });
@@ -582,5 +625,6 @@
       if (elements.farmCanvas) { elements.farmCanvas.width = 0; window.requestAnimationFrame(renderFarmMap); }
     }).observe(elements.farmCanvas);
   }
+  applyScene(readScenePreference(), false);
   loadFarm(false);
 })();
