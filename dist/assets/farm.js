@@ -33,6 +33,7 @@
   };
 
   const farmMap = document.getElementById("farm-map");
+  const weatherLayer = document.querySelector(".weather-layer");
   const sceneButtons = Array.from(document.querySelectorAll(".scene-button"));
   const weatherControls = document.getElementById("weather-controls");
   const weatherLabel = document.getElementById("weather-label");
@@ -87,6 +88,36 @@
     weatherControls.replaceChildren(fragment);
   }
 
+  function weatherParticleCount(kind, level) {
+    const counts = kind === "snow"
+      ? { none: 0, light: 28, medium: 62, heavy: 118, blizzard: 190 }
+      : { none: 0, light: 34, medium: 76, heavy: 138, storm: 220 };
+    return counts[level] || 0;
+  }
+
+  // Each weather event is a separately placed particle. This avoids the visible
+  // repeating stripes/dots that a tiled CSS gradient creates.
+  function renderWeatherParticles(scene) {
+    if (!weatherLayer) return;
+    const kind = weatherKind(scene.season);
+    const count = weatherParticleCount(kind, scene.weather);
+    const fragment = document.createDocumentFragment();
+    const random = Math.random;
+    for (let index = 0; index < count; index += 1) {
+      const particle = document.createElement("i");
+      particle.className = `weather-particle weather-${kind}`;
+      particle.style.setProperty("--x", `${Math.round(random() * 106 - 3)}%`);
+      particle.style.setProperty("--y", `${Math.round(random() * 112 - 14)}%`);
+      particle.style.setProperty("--delay", `${-(random() * 4).toFixed(2)}s`);
+      particle.style.setProperty("--duration", `${(kind === "snow" ? 2.8 + random() * 3.1 : .42 + random() * .8).toFixed(2)}s`);
+      particle.style.setProperty("--size", `${(kind === "snow" ? 2 + random() * 4.5 : 8 + random() * 13).toFixed(1)}px`);
+      particle.style.setProperty("--drift", `${Math.round(random() * 42 - 21)}px`);
+      particle.style.setProperty("--opacity", `${(.35 + random() * .62).toFixed(2)}`);
+      fragment.appendChild(particle);
+    }
+    weatherLayer.replaceChildren(fragment);
+  }
+
   function applyScene(scene, persist = true) {
     if (!farmMap) return;
     const next = {
@@ -98,6 +129,7 @@
     farmMap.dataset.time = next.time;
     farmMap.dataset.weather = next.weather;
     farmMap.dataset.weatherKind = weatherKind(next.season);
+    renderWeatherParticles(next);
     for (const button of sceneButtons) {
       const key = button.dataset.season ? "season" : "time";
       const active = button.dataset[key] === next[key];

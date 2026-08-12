@@ -31,6 +31,7 @@ assert(!/https?:\/\//.test(js), "Theme script must not fetch third-party endpoin
 assert(js.includes('credentials: "same-origin"'), "API calls must use same-origin credentials.");
 assert(js.includes('"/api/records/ping"'), "The theme must collect Komari Ping results.");
 assert(js.includes("komari-pixel-farm-scene-v2"), "The selected scene must be stored locally.");
+assert(js.includes("renderWeatherParticles"), "Weather must use individually placed particles, not a tiled texture.");
 assert(!html.includes("farm-scarecrow"), "The fixed decorative scarecrow overlay must not block the farm.");
 assert(!html.includes('id="moon-phase"'), "The fixed moon overlay must not block the farm.");
 assert(css.includes("grid-template-columns: repeat(3"), "The farm layout must expand as a CSS grid.");
