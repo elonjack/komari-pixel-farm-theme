@@ -1,11 +1,13 @@
 (() => {
   "use strict";
 
-  const API = Object.freeze({ public: "/api/public", nodes: "/api/nodes", recent: "/api/recent/" });
+  const API = Object.freeze({ public: "/api/public", nodes: "/api/nodes", recent: "/api/recent/", ping: "/api/records/ping" });
   const REFRESH_MIN_SECONDS = 15;
   const REFRESH_MAX_SECONDS = 300;
   const REQUEST_TIMEOUT_MS = 10000;
   const RECENT_CONCURRENCY = 6;
+  const PING_CONCURRENCY = 3;
+  const PING_LOOKBACK_HOURS = 1;
   const STALE_AFTER_MS = 150000;
   const UUID_PATTERN = /^[A-Za-z0-9-]{1,128}$/;
 
@@ -27,10 +29,11 @@
     dialogHealth: document.getElementById("dialog-health"),
     facts: document.getElementById("node-facts"),
     bars: document.getElementById("resource-bars"),
-    freshness: document.getElementById("node-freshness")
+    freshness: document.getElementById("node-freshness"),
+    pingTasks: document.getElementById("ping-tasks")
   };
 
-  const state = { nodes: [], snapshots: new Map(), settings: {}, loading: false, timer: null, lastLoaded: null };
+  const state = { nodes: [], snapshots: new Map(), pings: new Map(), settings: {}, loading: false, timer: null, lastLoaded: null };
 
   function seeded(seed) {
     let value = seed >>> 0;
@@ -254,15 +257,68 @@
     };
   }
 
+  function optionalNumber(value) {
+    const number = typeof value === "number" ? value : Number(value);
+    return Number.isFinite(number) ? number : null;
+  }
+
+  function normalizePing(raw) {
+    if (!raw || typeof raw !== "object" || !Array.isArray(raw.tasks)) return { tasks: [], primary: null };
+    const tasks = raw.tasks.map((task) => {
+      if (!task || typeof task !== "object") return null;
+      return {
+        id: optionalNumber(task.id),
+        name: asText(task.name, "未命名检测点"),
+        type: asText(task.type, "icmp"),
+        defaultOn: task.default_on === true,
+        loss: optionalNumber(task.loss),
+        min: optionalNumber(task.min),
+        max: optionalNumber(task.max),
+        avg: optionalNumber(task.avg),
+        total: optionalNumber(task.total)
+      };
+    }).filter(Boolean);
+    return { tasks, primary: tasks.find((task) => task.defaultOn) || tasks[0] || null };
+  }
+
+  function countryLabel(region) {
+    const source = asText(region, "未知地区");
+    const flagPoints = Array.from(source).map((character) => character.codePointAt(0));
+    const flagCode = flagPoints.length === 2 && flagPoints.every((point) => point >= 0x1f1e6 && point <= 0x1f1ff)
+      ? String.fromCharCode(...flagPoints.map((point) => point - 0x1f1e6 + 65))
+      : "";
+    const code = flagCode || source.toUpperCase();
+    if (/^[A-Z]{2}$/.test(code) && typeof Intl.DisplayNames === "function") {
+      try { return `${source} · ${new Intl.DisplayNames(["zh-CN"], { type: "region" }).of(code) || code}`; } catch { return source; }
+    }
+    return source;
+  }
+
+  function formatMilliseconds(value) { return value === null ? "—" : `${Math.round(value)} ms`; }
+
+  function formatLoss(value) { return value === null ? "—" : `${Math.max(0, value).toFixed(value % 1 ? 1 : 0)}%`; }
+
+  function pingHeadline(ping) {
+    if (!ping?.primary) return "Ping 未配置";
+    return `${ping.primary.name} · ${formatMilliseconds(ping.primary.avg)} · 丢包 ${formatLoss(ping.primary.loss)}`;
+  }
+
   function ratioPercent(used, total) { return total > 0 ? safePercent((used / total) * 100) : 0; }
 
-  function getHealth(snapshot) {
+  function getHealth(snapshot, ping) {
     if (!snapshot || !snapshot.timestamp || Date.now() - snapshot.timestamp > STALE_AFTER_MS) {
       return { key: "unknown", label: "休耕 · 状态待更新", explanation: "尚未取得最近 2 分半钟内的有效状态；这不一定代表节点离线。" };
     }
     const memory = ratioPercent(snapshot.memoryUsed, snapshot.memoryTotal);
     const disk = ratioPercent(snapshot.diskUsed, snapshot.diskTotal);
     const peak = Math.max(snapshot.cpu, memory, disk);
+    const primary = ping?.primary;
+    if (primary && ((primary.loss !== null && primary.loss >= 10) || (primary.avg !== null && primary.avg >= 500))) {
+      return { key: "alert", label: "警讯 · 链路异常", explanation: "Ping 丢包率达到 10%，或平均延迟达到 500 ms。" };
+    }
+    if (primary && ((primary.loss !== null && primary.loss > 0) || (primary.avg !== null && primary.avg >= 200))) {
+      return { key: "watch", label: "缺水 · 链路留意", explanation: "Ping 出现丢包，或平均延迟达到 200 ms。" };
+    }
     if (peak >= 90) return { key: "alert", label: "警讯 · 需要查看", explanation: "CPU、内存或磁盘使用率至少有一项达到 90%。" };
     if (peak >= 70) return { key: "watch", label: "缺水 · 请留意", explanation: "CPU、内存或磁盘使用率至少有一项达到 70%。" };
     return { key: "healthy", label: "茁壮 · 状态良好", explanation: "最近状态正常，CPU、内存和磁盘使用率均低于 70%。" };
@@ -274,6 +330,19 @@
     return ["turnip", "tomato", "blueberry", "corn"][Math.abs(hash) % 4];
   }
 
+  // The six coordinates correspond to the deliberately empty farm plots in the map artwork.
+  // Extra nodes reuse a plot until a later map pack adds more land; they are never sent to an external layout service.
+  const FIELD_LAYOUTS = Object.freeze([
+    { left: 33.0, top: 12.0, width: 23.5, height: 20.5 },
+    { left: 67.3, top: 14.5, width: 23.2, height: 20.3 },
+    { left: 11.2, top: 38.5, width: 22.4, height: 20.2 },
+    { left: 35.3, top: 40.1, width: 23.0, height: 20.0 },
+    { left: 67.1, top: 45.4, width: 23.1, height: 20.3 },
+    { left: 49.5, top: 67.4, width: 22.6, height: 20.0 }
+  ]);
+
+  function layoutFor(index) { return FIELD_LAYOUTS[index % FIELD_LAYOUTS.length]; }
+
   function createTextElement(tag, className, value) {
     const element = document.createElement(tag);
     if (className) element.className = className;
@@ -283,7 +352,7 @@
 
   function renderSummary() {
     const totals = { healthy: 0, watch: 0, alert: 0, unknown: 0 };
-    state.nodes.forEach((node) => { totals[getHealth(state.snapshots.get(node.uuid)).key] += 1; });
+    state.nodes.forEach((node) => { totals[getHealth(state.snapshots.get(node.uuid), state.pings.get(node.uuid)).key] += 1; });
     elements.summary.replaceChildren(
       summaryItem("田地", state.nodes.length),
       summaryItem("茁壮", totals.healthy),
@@ -301,11 +370,17 @@
 
   function renderPlots() {
     const fragment = document.createDocumentFragment();
-    for (const node of state.nodes) {
+    for (const [index, node] of state.nodes.entries()) {
       const snapshot = state.snapshots.get(node.uuid);
-      const health = getHealth(snapshot);
+      const ping = state.pings.get(node.uuid);
+      const health = getHealth(snapshot, ping);
       const card = document.createElement("article");
       card.className = `plot-card status-${health.key}`;
+      const layout = layoutFor(index);
+      card.style.setProperty("--plot-left", `${layout.left}%`);
+      card.style.setProperty("--plot-top", `${layout.top}%`);
+      card.style.setProperty("--plot-width", `${layout.width}%`);
+      card.style.setProperty("--plot-height", `${layout.height}%`);
       const cropBed = document.createElement("div");
       cropBed.className = "crop-bed";
       cropBed.setAttribute("aria-hidden", "true");
@@ -324,8 +399,8 @@
       const meta = document.createElement("span");
       meta.className = "plot-meta";
       const usage = snapshot ? `CPU ${snapshot.cpu.toFixed(0)}%` : "暂无状态";
-      meta.append(createTextElement("span", "", `${node.region} · ${node.group}`), createTextElement("span", "", usage));
-      sign.append(createTextElement("span", "plot-name", node.name), meta);
+      meta.append(createTextElement("span", "", countryLabel(node.region)), createTextElement("span", "", usage));
+      sign.append(createTextElement("span", "plot-name", node.name), meta, createTextElement("span", "plot-network", pingHeadline(ping)));
       card.append(cropBed, badge, sign);
       fragment.appendChild(card);
     }
@@ -357,15 +432,50 @@
     return row;
   }
 
+  function renderPingTasks(ping) {
+    if (!ping?.tasks?.length) {
+      elements.pingTasks.replaceChildren(createTextElement("p", "ping-empty", "此节点没有可展示的 Ping 检测记录。请在 Komari 后台配置并启用 Ping 任务。"));
+      return;
+    }
+    const fragment = document.createDocumentFragment();
+    for (const task of ping.tasks) {
+      const row = document.createElement("article");
+      row.className = "ping-task";
+      const title = document.createElement("div");
+      title.className = "ping-task-title";
+      title.append(createTextElement("strong", "", task.name), createTextElement("span", "", task.type.toUpperCase()));
+      const stats = document.createElement("div");
+      stats.className = "ping-stats";
+      stats.append(
+        pingStat("平均", formatMilliseconds(task.avg)),
+        pingStat("最低", formatMilliseconds(task.min)),
+        pingStat("最高", formatMilliseconds(task.max)),
+        pingStat("丢包", formatLoss(task.loss), task.loss !== null && task.loss > 0 ? "loss" : "")
+      );
+      row.append(title, stats);
+      fragment.appendChild(row);
+    }
+    elements.pingTasks.replaceChildren(fragment);
+  }
+
+  function pingStat(label, value, extraClass = "") {
+    const stat = document.createElement("span");
+    if (extraClass) stat.className = extraClass;
+    stat.append(createTextElement("small", "", label), createTextElement("strong", "", value));
+    return stat;
+  }
+
   function openNode(uuid) {
     const node = state.nodes.find((entry) => entry.uuid === uuid);
     if (!node) return;
     const snapshot = state.snapshots.get(uuid);
-    const health = getHealth(snapshot);
+    const ping = state.pings.get(uuid);
+    const health = getHealth(snapshot, ping);
     elements.dialogTitle.textContent = node.name;
-    elements.dialogSubtitle.textContent = `${node.region} · ${node.group} · ${node.os}`;
+    elements.dialogSubtitle.textContent = `${countryLabel(node.region)} · ${node.group} · ${node.os}`;
     elements.dialogHealth.className = `health-banner status-${health.key}`;
     elements.dialogHealth.textContent = `${health.label}：${health.explanation}`;
+    renderPingTasks(ping);
     elements.facts.replaceChildren(
       fact("系统", `${node.os} (${node.arch})`),
       fact("处理器", node.cpuName),
@@ -439,6 +549,11 @@
         return Array.isArray(data) && data.length ? normalizeSnapshot(data[data.length - 1]) : null;
       });
       state.snapshots = new Map(state.nodes.map((node, index) => [node.uuid, snapshots[index]]));
+      const pings = await mapWithConcurrency(state.nodes, PING_CONCURRENCY, async (node) => {
+        const query = new URLSearchParams({ uuid: node.uuid, hours: String(PING_LOOKBACK_HOURS) });
+        return normalizePing(await fetchJson(`${API.ping}?${query.toString()}`));
+      });
+      state.pings = new Map(state.nodes.map((node, index) => [node.uuid, pings[index] || { tasks: [], primary: null }]));
       state.lastLoaded = Date.now();
       renderSummary();
       renderPlots();
@@ -447,6 +562,7 @@
     } catch (error) {
       state.nodes = [];
       state.snapshots = new Map();
+      state.pings = new Map();
       renderSummary();
       renderPlots();
       elements.updated.textContent = manual ? "巡田失败，请检查站点连接后重试" : "暂时无法读取监控数据";
