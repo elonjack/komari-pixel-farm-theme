@@ -13,7 +13,6 @@
 
   const elements = {
     farmTitle: document.getElementById("farm-title"),
-    farmCanvas: document.getElementById("farm-canvas"),
     farmGrid: document.getElementById("farm-grid"),
     summary: document.getElementById("farm-summary"),
     plotCount: document.getElementById("plot-count"),
@@ -37,7 +36,6 @@
   const sceneButtons = Array.from(document.querySelectorAll(".scene-button"));
   const weatherControls = document.getElementById("weather-controls");
   const weatherLabel = document.getElementById("weather-label");
-  const moonPhase = document.getElementById("moon-phase");
   const SCENE_STORAGE_KEY = "komari-pixel-farm-scene-v2";
   const SCENE_SEASONS = new Set(["spring", "summer", "autumn", "winter"]);
   const SCENE_TIMES = new Set(["day", "night"]);
@@ -63,13 +61,6 @@
   function allowedWeather(season, level) {
     const levels = weatherKind(season) === "snow" ? SNOW_LEVELS : RAIN_LEVELS;
     return levels.has(level) ? level : "none";
-  }
-
-  function moonPhaseFor(date = new Date()) {
-    const synodicMonth = 29.530588853;
-    const knownNewMoon = Date.UTC(2000, 0, 6, 18, 14, 0);
-    const age = (((date.getTime() - knownNewMoon) / 86400000) % synodicMonth + synodicMonth) % synodicMonth;
-    return Math.floor(((age + 1.84566) / synodicMonth) * 8) % 8;
   }
 
   function renderWeatherButtons(scene) {
@@ -107,7 +98,6 @@
     farmMap.dataset.time = next.time;
     farmMap.dataset.weather = next.weather;
     farmMap.dataset.weatherKind = weatherKind(next.season);
-    if (moonPhase) moonPhase.dataset.phase = String(moonPhaseFor());
     for (const button of sceneButtons) {
       const key = button.dataset.season ? "season" : "time";
       const active = button.dataset[key] === next[key];
@@ -415,19 +405,6 @@
     return ["turnip", "tomato", "blueberry", "corn"][Math.abs(hash) % 4];
   }
 
-  // The six coordinates correspond to the deliberately empty farm plots in the original map artwork.
-  // Extra nodes reuse a plot until a later map pack adds more land; they are never sent to an external layout service.
-  const FIELD_LAYOUTS = Object.freeze([
-    { left: 20.6, top: 37.2, width: 18.7, height: 20.3 },
-    { left: 40.7, top: 37.2, width: 18.7, height: 20.3 },
-    { left: 60.6, top: 37.2, width: 18.7, height: 20.3 },
-    { left: 20.6, top: 60.5, width: 18.7, height: 20.8 },
-    { left: 40.7, top: 60.5, width: 18.7, height: 20.8 },
-    { left: 60.6, top: 60.5, width: 18.7, height: 20.8 }
-  ]);
-
-  function layoutFor(index) { return FIELD_LAYOUTS[index % FIELD_LAYOUTS.length]; }
-
   function createTextElement(tag, className, value) {
     const element = document.createElement(tag);
     if (className) element.className = className;
@@ -455,45 +432,28 @@
 
   function renderPlots() {
     const fragment = document.createDocumentFragment();
-    for (const [index, node] of state.nodes.entries()) {
+    for (const node of state.nodes) {
       const snapshot = state.snapshots.get(node.uuid);
       const ping = state.pings.get(node.uuid);
       const health = getHealth(snapshot, ping);
       const card = document.createElement("article");
       card.className = `plot-card status-${health.key}`;
-      const layout = layoutFor(index);
-      card.style.setProperty("--plot-left", `${layout.left}%`);
-      card.style.setProperty("--plot-top", `${layout.top}%`);
-      card.style.setProperty("--plot-width", `${layout.width}%`);
-      card.style.setProperty("--plot-height", `${layout.height}%`);
-      const cropBed = document.createElement("div");
-      cropBed.className = "crop-bed";
-      cropBed.setAttribute("aria-hidden", "true");
-      const crop = cropFor(node.uuid);
-      for (let index = 0; index < 4; index += 1) {
-        const plant = document.createElement("span");
-        plant.className = `crop ${crop}`;
-        cropBed.appendChild(plant);
-      }
-      const badge = createTextElement("span", "health-badge", health.label.split(" · ")[0]);
+      const badge = createTextElement("span", "health-badge", "");
+      badge.setAttribute("aria-label", health.label);
+      badge.title = health.label;
       const sign = document.createElement("button");
       sign.type = "button";
       sign.className = "plot-sign";
       sign.setAttribute("aria-label", `查看 ${node.name} 的服务器详情，${health.label}`);
       sign.addEventListener("click", () => openNode(node.uuid));
-      const meta = document.createElement("span");
-      meta.className = "plot-meta";
-      const usage = snapshot ? `CPU ${snapshot.cpu.toFixed(0)}%` : "暂无状态";
-      meta.append(createTextElement("span", "", countryLabel(node.region)), createTextElement("span", "", usage));
-      sign.append(createTextElement("span", "plot-name", node.name), meta, createTextElement("span", "plot-network", pingHeadline(ping)));
-      card.append(cropBed, badge, sign);
+      sign.append(createTextElement("span", "plot-name", node.name));
+      card.append(badge, sign);
       fragment.appendChild(card);
     }
     elements.farmGrid.replaceChildren(fragment);
     elements.farmGrid.setAttribute("aria-busy", "false");
     elements.plotCount.textContent = `共 ${state.nodes.length} 块田地`;
     elements.empty.hidden = state.nodes.length > 0;
-    window.requestAnimationFrame(renderFarmMap);
   }
 
   function fact(label, value) {
@@ -670,11 +630,6 @@
   elements.closeDialog.addEventListener("click", () => elements.dialog.close());
   elements.dialog.addEventListener("click", (event) => { if (event.target === elements.dialog) elements.dialog.close(); });
   document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && state.lastLoaded && Date.now() - state.lastLoaded > 60000) loadFarm(false); });
-  if ("ResizeObserver" in window) {
-    new ResizeObserver(() => {
-      if (elements.farmCanvas) { elements.farmCanvas.width = 0; window.requestAnimationFrame(renderFarmMap); }
-    }).observe(elements.farmCanvas);
-  }
   applyScene(readScenePreference(), false);
   loadFarm(false);
 })();

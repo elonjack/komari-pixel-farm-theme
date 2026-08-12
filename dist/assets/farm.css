@@ -54,7 +54,7 @@ h1 { margin-bottom: 0; font-family: Georgia, "Microsoft YaHei", serif; font-size
 .section-heading { justify-content: space-between; gap: 1rem; margin-bottom: 1rem; padding: .7rem .85rem; border: 3px solid #674324; box-shadow: 3px 3px 0 rgb(86 57 31 / .38); background: linear-gradient(#fff1c2 0 76%, #e7bd66 76% 82%, #fff1c2 82%); }
 .section-heading h2 { margin-bottom: 0; font-family: Georgia, "Microsoft YaHei", serif; font-size: 1.35rem; }
 .section-heading p { margin: 0; color: var(--muted); font-size: .86rem; }
-.scene-controls { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .55rem; }
+.scene-controls { display: flex; flex: 0 1 auto; flex-wrap: wrap; justify-content: flex-end; gap: .55rem; }
 .scene-group { display: flex; align-items: center; gap: .22rem; padding: .25rem .35rem; background: rgb(255 246 203 / .76); border: 2px solid #b27a3e; }
 .scene-label { margin-right: .12rem; color: #76522d; font-size: .7rem; font-weight: 800; }
 .scene-button { min-width: 1.65rem; cursor: pointer; padding: .25rem .36rem; color: #5a391d; background: #f7df9a; border: 1px solid #87572c; box-shadow: 1px 1px 0 rgb(87 57 31 / .35); font-size: .73rem; font-weight: 800; }
@@ -150,3 +150,32 @@ h1 { margin-bottom: 0; font-family: Georgia, "Microsoft YaHei", serif; font-size
 .moon-phase::after { content: ""; position: absolute; inset: -3px; border-radius: 50%; background: #1a2c62; transform: translateX(0); }
 .moon-phase[data-phase="0"]::after { transform: translateX(-88%); }.moon-phase[data-phase="1"]::after { transform: translateX(-62%); }.moon-phase[data-phase="2"]::after { transform: translateX(-50%); }.moon-phase[data-phase="3"]::after { transform: translateX(-24%); }.moon-phase[data-phase="4"]::after { display: none; }.moon-phase[data-phase="5"]::after { transform: translateX(24%); }.moon-phase[data-phase="6"]::after { transform: translateX(50%); }.moon-phase[data-phase="7"]::after { transform: translateX(62%); }
 @media (prefers-reduced-motion: reduce) { .weather-layer, .windmill { animation: none !important; } }
+
+/* v1.4: a real expandable farm, rather than six cards painted over a fixed screenshot. */
+.farm-map { display: block; min-height: 30rem; aspect-ratio: auto; padding: clamp(11rem, 18vw, 13.5rem) clamp(.8rem, 2vw, 1.5rem) clamp(1rem, 2vw, 1.5rem); background: #83bd49; isolation: isolate; }
+.farm-map[data-season="spring"], .farm-map[data-season="autumn"], .farm-map[data-season="winter"] { background-image: none; }
+.farm-scenery { position: absolute; z-index: 0; top: 0; right: 0; left: 0; height: clamp(11rem, 18vw, 13.5rem); border-bottom: 5px solid #64411f; background: #9acd4c url("./farm-map-v8.png") center top / 100% auto no-repeat; image-rendering: pixelated; }
+.farm-map[data-season="spring"] .farm-scenery { background-image: url("./farm-map-spring.png"); }
+.farm-map[data-season="autumn"] .farm-scenery { background-image: url("./farm-map-autumn.png"); }
+.farm-map[data-season="winter"] .farm-scenery { background-image: url("./farm-map-winter.png"); }
+.farm-map::before { content: ""; position: absolute; z-index: 0; inset: clamp(11rem, 18vw, 13.5rem) 0 0; background-color: #8bc24b; background-image: radial-gradient(#a9d86d 1px, transparent 1.5px), radial-gradient(#5f9c3e 1px, transparent 1.5px), linear-gradient(90deg, transparent 0 19%, rgb(232 185 83 / .72) 19% 22%, transparent 22% 48%, rgb(232 185 83 / .72) 48% 51%, transparent 51% 78%, rgb(232 185 83 / .72) 78% 81%, transparent 81%); background-size: 17px 17px, 29px 29px, 100% 100%; background-position: 0 0, 9px 11px, 0 0; }
+.farm-map[data-season="autumn"]::before { background-color: #b88139; }.farm-map[data-season="winter"]::before { background-color: #e8f4ff; background-image: radial-gradient(#fff 1px, transparent 1.7px), linear-gradient(90deg, transparent 0 19%, rgb(203 220 237 / .9) 19% 22%, transparent 22% 48%, rgb(203 220 237 / .9) 48% 51%, transparent 51% 78%, rgb(203 220 237 / .9) 78% 81%, transparent 81%); }
+.farm-grid { position: relative; z-index: 3; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(.85rem, 1.8vw, 1.4rem); }
+.plot-card { position: relative; left: auto; top: auto; width: auto; height: auto; min-height: clamp(6.4rem, 11.4vw, 8.5rem); overflow: hidden; border: 5px solid #518334; border-radius: 9px; background-color: #a96231; background-image: radial-gradient(ellipse at 9% 16%, rgb(232 169 79 / .42) 0 2px, transparent 2.6px), radial-gradient(ellipse at 74% 32%, rgb(91 50 25 / .44) 0 2px, transparent 2.8px), radial-gradient(ellipse at 41% 76%, rgb(238 177 84 / .32) 0 1.5px, transparent 2.2px), linear-gradient(#8ac54c 0 8%, transparent 8% 92%, #76ad42 92%); box-shadow: inset 0 0 0 3px #d7a254, 3px 4px 0 rgb(63 39 19 / .34); }
+.plot-card::before { content: ""; position: absolute; inset: 17% 9% 25%; background: radial-gradient(ellipse at 8% 27%, #458e39 0 3px, #62ab47 3.3px 5px, transparent 5.4px), radial-gradient(ellipse at 29% 27%, #458e39 0 3px, #62ab47 3.3px 5px, transparent 5.4px), radial-gradient(ellipse at 50% 27%, #458e39 0 3px, #62ab47 3.3px 5px, transparent 5.4px), radial-gradient(ellipse at 71% 27%, #458e39 0 3px, #62ab47 3.3px 5px, transparent 5.4px), radial-gradient(ellipse at 18% 65%, #4b963e 0 3px, #72bb4b 3.3px 5px, transparent 5.4px), radial-gradient(ellipse at 40% 65%, #4b963e 0 3px, #72bb4b 3.3px 5px, transparent 5.4px), radial-gradient(ellipse at 62% 65%, #4b963e 0 3px, #72bb4b 3.3px 5px, transparent 5.4px), radial-gradient(ellipse at 84% 65%, #4b963e 0 3px, #72bb4b 3.3px 5px, transparent 5.4px); opacity: .95; }
+.plot-card::after { content: ""; position: absolute; z-index: 1; inset: 7% 6%; border: 2px solid rgb(239 184 93 / .62); border-radius: 6px; pointer-events: none; }
+.plot-card:nth-child(3n + 2)::before { filter: hue-rotate(30deg); }.plot-card:nth-child(3n)::before { filter: hue-rotate(-25deg); }
+.plot-card.status-watch { filter: saturate(.88); }.plot-card.status-alert { filter: saturate(.78) brightness(.91); }.plot-card.status-unknown { filter: saturate(.55); }
+.plot-sign { position: absolute; z-index: 4; top: auto; right: auto; bottom: 11%; left: 10%; width: auto; max-width: 72%; height: auto; min-height: 0; padding: .14rem .32rem .18rem; color: #fff3c6; background: linear-gradient(#8d572d 0 18%, #56311a 18% 84%, #321b0d 84%); border: 2px solid #321b0d; outline: 1px solid #d79c4a; box-shadow: 1px 1px 0 rgb(52 29 15 / .55); font-size: .7rem; text-shadow: 1px 1px 0 #17100a; }
+.plot-sign::after { content: ""; position: absolute; bottom: -1rem; left: 46%; width: .26rem; height: 1rem; background: #543019; border: 1px solid #2d190b; }
+.plot-sign:hover { background: linear-gradient(#a56835 0 14%, #684023 14% 86%, #3d2412 86%); transform: translateY(-1px); }
+.plot-name { max-width: 15ch; font-family: "Microsoft YaHei", sans-serif; font-size: clamp(.58rem, .95vw, .75rem); line-height: 1.1; }
+.plot-meta, .plot-network { display: none; }
+.health-badge { z-index: 5; top: .5rem; left: .55rem; width: .7rem; height: .7rem; min-height: 0; overflow: hidden; padding: 0; border: 2px solid #fff5ca; border-radius: 50%; color: transparent; box-shadow: 1px 1px 0 rgb(67 41 21 / .6); }
+.farm-map[data-time="night"]::after { z-index: 2; background: linear-gradient(rgb(20 41 80 / .38), rgb(20 41 80 / .54)); mix-blend-mode: multiply; }
+.farm-map[data-time="night"] .plot-sign, .farm-map[data-time="night"] .health-badge { z-index: 5; }
+.weather-layer { z-index: 2; }.farm-map[data-time="night"] .weather-layer { filter: brightness(.8); }
+.farm-scarecrow, .moon-phase { display: none !important; }
+@media (max-width: 960px) { .section-heading { align-items: flex-start; flex-direction: column; }.scene-controls { justify-content: flex-start; } }
+@media (max-width: 760px) { .farm-map { padding-top: clamp(9rem, 31vw, 11rem); }.farm-scenery { height: clamp(9rem, 31vw, 11rem); }.farm-map::before { inset: clamp(9rem, 31vw, 11rem) 0 0; }.farm-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }.plot-card { min-height: 8rem; } }
+@media (max-width: 440px) { .farm-grid { grid-template-columns: 1fr; }.plot-card { min-height: 9rem; } }
