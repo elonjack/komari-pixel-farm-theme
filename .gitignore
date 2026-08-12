@@ -1,0 +1,5 @@
+# Versioned theme packages are published as GitHub Release assets, not source files.
+pixel-farm-theme-v*.zip
+
+# Retained local concept-art draft; the current tile-map theme does not use it.
+dist/assets/farm-landscape-v1.png

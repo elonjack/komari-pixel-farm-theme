@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#5a9852" />
+    <title>Komari Monitor</title>
+    <meta name="description" content="A simple server monitor tool." />
+    <link rel="stylesheet" href="./assets/farm.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#farm-grid">跳到田地列表</a>
+    <main class="page-shell">
+      <header class="topbar" aria-label="农场概览">
+        <div class="brand-lockup">
+          <span class="brand-mark" aria-hidden="true">✦</span>
+          <div>
+            <p class="eyebrow">KOMARI · FIELD OBSERVATORY</p>
+            <h1 id="farm-title">云端田野</h1>
+          </div>
+        </div>
+        <div class="topbar-actions">
+          <p id="last-updated" class="last-updated" aria-live="polite">正在查看田地…</p>
+          <button id="refresh-button" class="pixel-button" type="button">巡田刷新</button>
+        </div>
+      </header>
+
+      <section class="farm-intro" aria-labelledby="farm-heading">
+        <div>
+          <p class="eyebrow">今日田务</p>
+          <h2 id="farm-heading">每一块田地，都是一台服务器</h2>
+          <p>作物健康由最新监控数据决定。点击田边木牌，查看这台服务器的完整账本。</p>
+        </div>
+        <div id="farm-summary" class="summary-strip" aria-live="polite"></div>
+      </section>
+
+      <section id="status-hint" class="status-hint" aria-label="田地状态说明">
+        <span><i class="legend-dot healthy"></i> 茁壮：资源使用正常</span>
+        <span><i class="legend-dot watch"></i> 缺水：资源使用偏高</span>
+        <span><i class="legend-dot alert"></i> 警讯：资源使用严重偏高</span>
+        <span><i class="legend-dot unknown"></i> 休耕：暂未取得新状态</span>
+      </section>
+
+      <section class="farm-section" aria-labelledby="plots-heading">
+        <div class="section-heading">
+          <h2 id="plots-heading">服务器田地</h2>
+          <p id="plot-count">等待数据</p>
+        </div>
+        <div class="farm-map" aria-label="像素农场地图">
+          <canvas id="farm-canvas" class="farm-canvas" aria-hidden="true"></canvas>
+          <div id="farm-grid" class="farm-grid" aria-live="polite" aria-busy="true"></div>
+        </div>
+        <div id="empty-state" class="empty-state" hidden>
+          <p class="empty-icon" aria-hidden="true">⌁</p>
+          <h2>田地还没有播种</h2>
+          <p>当前没有可展示的 Komari 节点，或读取节点数据失败。请检查节点与站点访问权限后刷新。</p>
+          <button id="empty-refresh-button" class="pixel-button" type="button">重新巡田</button>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">Powered by Komari Monitor.</footer>
+
+    <dialog id="node-dialog" class="node-dialog" aria-labelledby="dialog-title">
+      <article class="ledger-card">
+        <div class="ledger-topline">
+          <p class="eyebrow">田地账本</p>
+          <button id="close-dialog" class="close-button" type="button" aria-label="关闭节点详情">×</button>
+        </div>
+        <h2 id="dialog-title">服务器详情</h2>
+        <p id="dialog-subtitle" class="dialog-subtitle"></p>
+        <div id="dialog-health" class="health-banner"></div>
+        <dl id="node-facts" class="facts-grid"></dl>
+        <section class="resource-section" aria-labelledby="resource-heading">
+          <h3 id="resource-heading">今日作物健康</h3>
+          <div id="resource-bars" class="resource-bars"></div>
+        </section>
+        <p id="node-freshness" class="freshness"></p>
+      </article>
+    </dialog>
+
+    <noscript><p class="noscript">此主题需要启用 JavaScript 才能读取 Komari 监控数据。</p></noscript>
+    <script src="./assets/farm.js" defer></script>
+  </body>
+</html>

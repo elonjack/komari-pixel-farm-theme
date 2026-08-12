@@ -1,0 +1,57 @@
+{
+  "name": "田野监控站",
+  "short": "pixel-farm",
+  "description": "将 Komari 节点展示为原创像素农场田地的只读监控主题。",
+  "version": "0.3.0",
+  "author": "Pixel Farm Theme Contributors",
+  "preview": "preview.svg",
+  "configuration": {
+    "type": "managed",
+    "icon": "/themes/pixel-farm/preview.svg",
+    "name": {
+      "zh-CN": "田野监控站设置",
+      "en": "Pixel Farm settings"
+    },
+    "data": [
+      {
+        "name": {
+          "zh-CN": "农场名称",
+          "en": "Farm name"
+        },
+        "type": "string",
+        "key": "farm_name",
+        "default": "云端田野",
+        "help": {
+          "zh-CN": "显示在监控首页的名称；不要填写密码、令牌或其他敏感信息。",
+          "en": "Shown on the home page. Do not enter secrets here."
+        }
+      },
+      {
+        "name": {
+          "zh-CN": "刷新间隔（秒）",
+          "en": "Refresh interval (seconds)"
+        },
+        "type": "number",
+        "key": "refresh_seconds",
+        "default": 30,
+        "help": {
+          "zh-CN": "建议 15–300 秒；主题会自动限制到这个安全范围。",
+          "en": "Recommended: 15–300 seconds; the theme clamps this safe range."
+        }
+      },
+      {
+        "name": {
+          "zh-CN": "显示运行提示",
+          "en": "Show status hint"
+        },
+        "type": "switch",
+        "key": "show_status_hint",
+        "default": true,
+        "help": {
+          "zh-CN": "在首页显示作物状态与监控指标的对应说明。",
+          "en": "Shows the relationship between crop state and monitoring data."
+        }
+      }
+    ]
+  }
+}
