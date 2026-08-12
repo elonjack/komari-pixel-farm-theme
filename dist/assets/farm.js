@@ -35,9 +35,15 @@
 
   const farmMap = document.getElementById("farm-map");
   const sceneButtons = Array.from(document.querySelectorAll(".scene-button"));
-  const SCENE_STORAGE_KEY = "komari-pixel-farm-scene-v1";
+  const weatherControls = document.getElementById("weather-controls");
+  const weatherLabel = document.getElementById("weather-label");
+  const moonPhase = document.getElementById("moon-phase");
+  const SCENE_STORAGE_KEY = "komari-pixel-farm-scene-v2";
   const SCENE_SEASONS = new Set(["spring", "summer", "autumn", "winter"]);
   const SCENE_TIMES = new Set(["day", "night"]);
+  const RAIN_LEVELS = new Set(["none", "light", "medium", "heavy", "storm"]);
+  const SNOW_LEVELS = new Set(["none", "light", "medium", "heavy", "blizzard"]);
+  const WEATHER_LABELS = Object.freeze({ none: "晴朗", light: "小", medium: "中", heavy: "大", storm: "暴雨", blizzard: "暴雪" });
 
   const state = { nodes: [], snapshots: new Map(), pings: new Map(), settings: {}, loading: false, timer: null, lastLoaded: null };
 
@@ -46,19 +52,62 @@
       const saved = JSON.parse(window.localStorage.getItem(SCENE_STORAGE_KEY) || "{}");
       return {
         season: SCENE_SEASONS.has(saved?.season) ? saved.season : "summer",
-        time: SCENE_TIMES.has(saved?.time) ? saved.time : "day"
+        time: SCENE_TIMES.has(saved?.time) ? saved.time : "day",
+        weather: RAIN_LEVELS.has(saved?.weather) || SNOW_LEVELS.has(saved?.weather) ? saved.weather : "none"
       };
-    } catch { return { season: "summer", time: "day" }; }
+    } catch { return { season: "summer", time: "day", weather: "none" }; }
+  }
+
+  function weatherKind(season) { return season === "winter" ? "snow" : "rain"; }
+
+  function allowedWeather(season, level) {
+    const levels = weatherKind(season) === "snow" ? SNOW_LEVELS : RAIN_LEVELS;
+    return levels.has(level) ? level : "none";
+  }
+
+  function moonPhaseFor(date = new Date()) {
+    const synodicMonth = 29.530588853;
+    const knownNewMoon = Date.UTC(2000, 0, 6, 18, 14, 0);
+    const age = (((date.getTime() - knownNewMoon) / 86400000) % synodicMonth + synodicMonth) % synodicMonth;
+    return Math.floor(((age + 1.84566) / synodicMonth) * 8) % 8;
+  }
+
+  function renderWeatherButtons(scene) {
+    if (!weatherControls || !weatherLabel) return;
+    const kind = weatherKind(scene.season);
+    const levels = kind === "snow"
+      ? [["none", "无雪"], ["light", "小雪"], ["medium", "中雪"], ["heavy", "大雪"], ["blizzard", "暴雪"]]
+      : [["none", "晴朗"], ["light", "小雨"], ["medium", "中雨"], ["heavy", "大雨"], ["storm", "暴雨"]];
+    weatherLabel.textContent = kind === "snow" ? "降雪" : "降雨";
+    const fragment = document.createDocumentFragment();
+    fragment.appendChild(weatherLabel);
+    for (const [level, label] of levels) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "scene-button weather-button";
+      button.dataset.weather = level;
+      button.textContent = label;
+      const active = scene.weather === level;
+      button.classList.toggle("is-active", active);
+      button.setAttribute("aria-pressed", String(active));
+      button.addEventListener("click", () => applyScene({ ...readScenePreference(), weather: level }));
+      fragment.appendChild(button);
+    }
+    weatherControls.replaceChildren(fragment);
   }
 
   function applyScene(scene, persist = true) {
     if (!farmMap) return;
     const next = {
       season: SCENE_SEASONS.has(scene?.season) ? scene.season : "summer",
-      time: SCENE_TIMES.has(scene?.time) ? scene.time : "day"
+      time: SCENE_TIMES.has(scene?.time) ? scene.time : "day",
+      weather: allowedWeather(SCENE_SEASONS.has(scene?.season) ? scene.season : "summer", scene?.weather)
     };
     farmMap.dataset.season = next.season;
     farmMap.dataset.time = next.time;
+    farmMap.dataset.weather = next.weather;
+    farmMap.dataset.weatherKind = weatherKind(next.season);
+    if (moonPhase) moonPhase.dataset.phase = String(moonPhaseFor());
     for (const button of sceneButtons) {
       const key = button.dataset.season ? "season" : "time";
       const active = button.dataset[key] === next[key];
@@ -68,6 +117,7 @@
     if (persist) {
       try { window.localStorage.setItem(SCENE_STORAGE_KEY, JSON.stringify(next)); } catch { /* Scene preferences are optional. */ }
     }
+    renderWeatherButtons(next);
   }
 
   function seeded(seed) {

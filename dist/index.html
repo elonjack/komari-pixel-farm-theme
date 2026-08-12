@@ -61,10 +61,18 @@
               <button class="scene-button" type="button" data-time="day">☀ 白天</button>
               <button class="scene-button" type="button" data-time="night">☾ 夜晚</button>
             </div>
+            <div id="weather-controls" class="scene-group weather-controls" role="group" aria-label="天气强度">
+              <span id="weather-label" class="scene-label">天气</span>
+            </div>
           </div>
         </div>
         <div id="farm-map" class="farm-map" aria-label="像素农场地图" data-season="summer" data-time="day">
           <canvas id="farm-canvas" class="farm-canvas" aria-hidden="true"></canvas>
+          <div class="weather-layer" aria-hidden="true"></div>
+          <div class="farm-scarecrow" aria-hidden="true">
+            <span class="scarecrow-hat"></span><span class="scarecrow-head"></span><span class="scarecrow-body"></span><span class="scarecrow-arm arm-left"></span><span class="scarecrow-arm arm-right"></span><span class="windmill"><i></i><b></b><em></em><strong></strong></span>
+          </div>
+          <div id="moon-phase" class="moon-phase" aria-hidden="true"></div>
           <div id="farm-grid" class="farm-grid" aria-live="polite" aria-busy="true"></div>
         </div>
         <div id="empty-state" class="empty-state" hidden>

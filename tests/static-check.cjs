@@ -24,9 +24,12 @@ assert(html.includes("Powered by Komari Monitor."), "Komari attribution is requi
 assert(html.includes('href="/admin"'), "The theme must provide a direct admin link.");
 assert(html.includes('data-season="spring"') && html.includes('data-season="winter"'), "The seasonal controls are required.");
 assert(html.includes('data-time="night"'), "The day/night control is required.");
+assert(html.includes('id="weather-controls"'), "The weather intensity controls are required.");
+assert(html.includes('id="moon-phase"'), "The night moon indicator is required.");
 assert(!/\.innerHTML\s*=/.test(js), "Remote API data must not be written with innerHTML.");
 assert(!/https?:\/\//.test(js), "Theme script must not fetch third-party endpoints.");
 assert(js.includes('credentials: "same-origin"'), "API calls must use same-origin credentials.");
 assert(js.includes('"/api/records/ping"'), "The theme must collect Komari Ping results.");
-assert(js.includes("komari-pixel-farm-scene-v1"), "The selected scene must be stored locally.");
+assert(js.includes("komari-pixel-farm-scene-v2"), "The selected scene must be stored locally.");
+assert(js.includes("moonPhaseFor"), "The night moon phase calculation is required.");
 console.log("Static theme checks passed.");
