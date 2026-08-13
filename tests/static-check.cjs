@@ -10,8 +10,8 @@ const css = fs.readFileSync(path.join(root, "dist", "assets", "farm.css"), "utf8
 
 function assert(condition, message) { if (!condition) throw new Error(message); }
 
-assert(manifest.short === "pixel-farm", "Theme short identifier must be pixel-farm.");
-assert(manifest.version === "1.5.1", "The import-fix release must be version 1.5.1.");
+assert(manifest.short === "pixel-farm-v2", "Theme short identifier must be pixel-farm-v2.");
+assert(manifest.version === "1.6.0", "The portable-archive release must be version 1.6.0.");
 assert(fs.existsSync(path.join(root, "dist", "index.html")), "dist/index.html is required.");
 assert(html.includes('class="farm-scenery"'), "The expandable farm scenery layer is required.");
 assert(html.includes('id="ping-tasks"'), "The Ping task detail panel is required.");

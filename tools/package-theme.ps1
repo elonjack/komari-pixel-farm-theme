@@ -16,7 +16,11 @@ try {
   @('farm.css', 'farm.js', 'farm-map-v8.png', 'farm-map-spring.png', 'farm-map-autumn.png', 'farm-map-winter.png') | ForEach-Object {
     Copy-Item -LiteralPath (Join-Path $root "dist/assets/$_") -Destination (Join-Path $stage 'dist/assets')
   }
-  Compress-Archive -Path (Join-Path $stage '*') -DestinationPath $archive -CompressionLevel Optimal
+  # Komari 1.4.x runs on Linux and passes the ZIP entry mode to os.OpenFile.
+  # The Windows Compress-Archive cmdlet leaves that mode unset; bsdtar writes
+  # portable POSIX modes so every extracted dist asset is readable.
+  & tar.exe -a -c -f $archive -C $stage komari-theme.json preview.svg dist
+  if ($LASTEXITCODE -ne 0) { throw "tar failed while creating the theme archive." }
 } finally {
   Remove-Item -LiteralPath $stage -Recurse -Force -ErrorAction SilentlyContinue
 }
