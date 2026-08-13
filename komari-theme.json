@@ -2,7 +2,7 @@
   "name": "田野监控站",
   "short": "pixel-farm-v2",
   "description": "将 Komari 节点展示为原创像素农场田地的只读监控主题。",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "author": "Pixel Farm Theme Contributors",
   "preview": "dist/assets/farm-map-v8.png",
   "configuration": {

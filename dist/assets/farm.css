@@ -154,18 +154,19 @@ h1 { margin-bottom: 0; font-family: Georgia, "Microsoft YaHei", serif; font-size
 .farm-map[data-season="winter"] .farm-scenery { background-image: url("./farm-map-winter.png"); }
 .farm-map::before { content: ""; position: absolute; z-index: 1; inset: 0; pointer-events: none; background: linear-gradient(180deg, rgb(18 52 29 / .02), rgb(12 45 23 / .08)); }
 .farm-grid { position: relative; z-index: 5; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(1.4rem, 5vw, 5rem) clamp(.85rem, 2.4vw, 2rem); align-content: space-evenly; min-height: 28rem; }
-.plot-card { position: relative; left: auto; top: auto; display: grid; width: auto; height: auto; min-height: clamp(6.5rem, 14vw, 10rem); overflow: visible; border: 0; background: transparent; box-shadow: none; place-items: center; }
+.plot-card { position: relative; left: auto; top: auto; width: auto; height: auto; min-height: clamp(6.5rem, 14vw, 10rem); overflow: visible; border: 0; background: transparent; box-shadow: none; }
 .plot-card::before, .plot-card::after { content: none; }
 .plot-card.status-watch, .plot-card.status-alert, .plot-card.status-unknown { filter: none; }
-.plot-sign { position: relative; z-index: 7; top: auto; right: auto; bottom: auto; left: auto; width: fit-content; max-width: 92%; height: auto; min-height: 0; padding: .18rem .42rem .23rem; color: #fff3c6; background: linear-gradient(#8d572d 0 18%, #56311a 18% 84%, #321b0d 84%); border: 2px solid #321b0d; outline: 1px solid #d79c4a; box-shadow: 1px 1px 0 rgb(52 29 15 / .55); font-size: .7rem; text-shadow: 1px 1px 0 #17100a; }
-.plot-sign::after { content: ""; position: absolute; bottom: -1rem; left: 46%; width: .26rem; height: 1rem; background: #543019; border: 1px solid #2d190b; }
+.plot-sign { position: absolute; z-index: 7; top: auto; right: auto; bottom: clamp(.65rem, 1.7vw, 1.1rem); left: clamp(.55rem, 1.5vw, 1.05rem); width: clamp(7.25rem, 12vw, 9.4rem); max-width: calc(100% - 1.3rem); height: auto; min-height: 0; padding: .18rem .42rem .23rem; color: #fff3c6; background: linear-gradient(#8d572d 0 18%, #56311a 18% 84%, #321b0d 84%); border: 2px solid #321b0d; outline: 1px solid #d79c4a; box-shadow: 1px 1px 0 rgb(52 29 15 / .55); font-size: .7rem; text-shadow: 1px 1px 0 #17100a; }
+.plot-sign::after { content: ""; position: absolute; bottom: -1rem; left: .72rem; width: .26rem; height: 1rem; background: #543019; border: 1px solid #2d190b; }
 .plot-sign:hover { background: linear-gradient(#a56835 0 14%, #684023 14% 86%, #3d2412 86%); transform: translateY(-1px); }
-.plot-name { max-width: 15ch; font-family: "Microsoft YaHei", sans-serif; font-size: clamp(.58rem, .95vw, .75rem); line-height: 1.1; }
+.plot-name { display: block; width: 100%; max-width: none; overflow: hidden; font-family: "Microsoft YaHei", sans-serif; font-size: clamp(.58rem, .95vw, .75rem); line-height: 1.1; text-overflow: ellipsis; white-space: nowrap; }
 .plot-meta, .plot-network { display: none; }
-.health-badge { z-index: 8; top: calc(50% - 1.28rem); left: calc(50% - 2.1rem); width: .7rem; height: .7rem; min-height: 0; overflow: hidden; padding: 0; border: 2px solid #fff5ca; border-radius: 50%; color: transparent; box-shadow: 1px 1px 0 rgb(67 41 21 / .6); }
+.health-badge { z-index: 8; top: auto; right: auto; bottom: clamp(2.35rem, 4vw, 2.75rem); left: clamp(.55rem, 1.5vw, 1.05rem); width: .7rem; height: .7rem; min-height: 0; overflow: hidden; padding: 0; border: 2px solid #fff5ca; border-radius: 50%; color: transparent; box-shadow: 1px 1px 0 rgb(67 41 21 / .6); }
 .farm-map[data-time="night"]::after { z-index: 2; background: linear-gradient(rgb(20 41 80 / .38), rgb(20 41 80 / .54)); mix-blend-mode: multiply; }
 .farm-map[data-time="night"] .plot-sign, .farm-map[data-time="night"] .health-badge { z-index: 5; }
 .weather-layer { z-index: 6; }.farm-map[data-time="night"] .weather-layer { filter: brightness(.8); }
+.farm-map[data-time="night"] .plot-sign { z-index: 7; }.farm-map[data-time="night"] .health-badge { z-index: 8; }
 .farm-scarecrow, .moon-phase { display: none !important; }
 @media (max-width: 960px) { .section-heading { align-items: flex-start; flex-direction: column; }.scene-controls { justify-content: flex-start; } }
 @media (max-width: 760px) { .farm-map { min-height: 32rem; padding-top: 1.75rem; }.farm-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); min-height: 27rem; gap: 1.25rem .8rem; }.plot-card { min-height: 8rem; } }

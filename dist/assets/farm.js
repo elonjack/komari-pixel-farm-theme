@@ -1,13 +1,15 @@
 (() => {
   "use strict";
 
-  const API = Object.freeze({ public: "/api/public", nodes: "/api/nodes", recent: "/api/recent/", ping: "/api/records/ping" });
+  const API = Object.freeze({ public: "/api/public", nodes: "/api/nodes", recent: "/api/recent/", ping: "/api/records/ping", rpc: "/api/rpc2" });
   const REFRESH_MIN_SECONDS = 15;
   const REFRESH_MAX_SECONDS = 300;
   const REQUEST_TIMEOUT_MS = 10000;
   const RECENT_CONCURRENCY = 6;
   const PING_CONCURRENCY = 3;
   const PING_LOOKBACK_HOURS = 1;
+  const LIVE_REFRESH_MS = 2000;
+  const LIVE_TIMEOUT_MS = 8000;
   const STALE_AFTER_MS = 150000;
   const UUID_PATTERN = /^[A-Za-z0-9-]{1,128}$/;
 
@@ -44,7 +46,7 @@
   const SNOW_LEVELS = new Set(["none", "light", "medium", "heavy", "blizzard"]);
   const WEATHER_LABELS = Object.freeze({ none: "晴朗", light: "小", medium: "中", heavy: "大", storm: "暴雨", blizzard: "暴雪" });
 
-  const state = { nodes: [], snapshots: new Map(), pings: new Map(), settings: {}, loading: false, timer: null, lastLoaded: null };
+  const state = { nodes: [], snapshots: new Map(), pings: new Map(), settings: {}, loading: false, timer: null, liveTimer: null, liveRequest: false, liveFailures: 0, lastLoaded: null, lastLive: null, selectedUuid: null };
 
   function readScenePreference() {
     try {
@@ -328,6 +330,26 @@
     }
   }
 
+  async function fetchRpc(method, params) {
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), LIVE_TIMEOUT_MS);
+    try {
+      const response = await fetch(API.rpc, {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { Accept: "application/json", "Content-Type": "application/json" },
+        signal: controller.signal,
+        body: JSON.stringify({ jsonrpc: "2.0", id: `farm-${Date.now()}`, method, params })
+      });
+      if (!response.ok) throw new Error(`RPC HTTP ${response.status}`);
+      const payload = await response.json();
+      if (!payload || payload.error) throw new Error(payload?.error?.message || "Komari RPC failed");
+      return payload.result;
+    } finally {
+      window.clearTimeout(timeout);
+    }
+  }
+
   function normalizeNode(raw) {
     if (!raw || typeof raw !== "object" || !UUID_PATTERN.test(raw.uuid || "")) return null;
     return {
@@ -349,15 +371,15 @@
     if (!raw || typeof raw !== "object") return null;
     const timestamp = parseDate(raw.updated_at);
     return {
-      cpu: safePercent(raw.cpu?.usage),
-      memoryUsed: Math.max(0, asFiniteNumber(raw.ram?.used)),
-      memoryTotal: Math.max(0, asFiniteNumber(raw.ram?.total)),
-      diskUsed: Math.max(0, asFiniteNumber(raw.disk?.used)),
-      diskTotal: Math.max(0, asFiniteNumber(raw.disk?.total)),
-      networkUp: Math.max(0, asFiniteNumber(raw.network?.up)),
-      networkDown: Math.max(0, asFiniteNumber(raw.network?.down)),
+      cpu: safePercent(raw.cpu?.usage ?? raw.cpu),
+      memoryUsed: Math.max(0, asFiniteNumber(raw.ram?.used ?? raw.ram)),
+      memoryTotal: Math.max(0, asFiniteNumber(raw.ram?.total ?? raw.ram_total)),
+      diskUsed: Math.max(0, asFiniteNumber(raw.disk?.used ?? raw.disk)),
+      diskTotal: Math.max(0, asFiniteNumber(raw.disk?.total ?? raw.disk_total)),
+      networkUp: Math.max(0, asFiniteNumber(raw.network?.up ?? raw.net_out)),
+      networkDown: Math.max(0, asFiniteNumber(raw.network?.down ?? raw.net_in)),
       uptime: Math.max(0, asFiniteNumber(raw.uptime)),
-      load: Math.max(0, asFiniteNumber(raw.load?.load1)),
+      load: Math.max(0, asFiniteNumber(raw.load?.load1 ?? raw.load)),
       process: Math.max(0, Math.floor(asFiniteNumber(raw.process))),
       message: asText(raw.message, ""),
       timestamp
@@ -488,6 +510,42 @@
     elements.empty.hidden = state.nodes.length > 0;
   }
 
+  function latestStatusMap(payload) {
+    if (!payload || typeof payload !== "object") return {};
+    if (payload.records && typeof payload.records === "object" && !Array.isArray(payload.records)) return payload.records;
+    return payload;
+  }
+
+  async function refreshLiveStatus() {
+    if (state.liveRequest || !state.nodes.length || document.visibilityState !== "visible") return;
+    state.liveRequest = true;
+    try {
+      const payload = await fetchRpc("common:getNodesLatestStatus", { uuids: state.nodes.map((node) => node.uuid) });
+      const records = latestStatusMap(payload);
+      let changed = false;
+      for (const node of state.nodes) {
+        const snapshot = normalizeSnapshot(records[node.uuid]);
+        if (snapshot) {
+          state.snapshots.set(node.uuid, snapshot);
+          changed = true;
+        }
+      }
+      if (changed) {
+        state.liveFailures = 0;
+        state.lastLive = Date.now();
+        renderSummary();
+        renderPlots();
+        if (elements.dialog.open && state.selectedUuid) openNode(state.selectedUuid);
+        elements.updated.textContent = `实时采样 · ${new Intl.DateTimeFormat("zh-CN", { hour: "2-digit", minute: "2-digit", second: "2-digit" }).format(new Date())}`;
+      }
+    } catch (error) {
+      state.liveFailures += 1;
+      if (state.liveFailures === 1) console.warn("Pixel Farm live status RPC is unavailable; using the most recent recorded snapshot.", error);
+    } finally {
+      state.liveRequest = false;
+    }
+  }
+
   function fact(label, value) {
     const container = document.createElement("div");
     container.append(createTextElement("dt", "", label), createTextElement("dd", "", value));
@@ -545,6 +603,7 @@
   function openNode(uuid) {
     const node = state.nodes.find((entry) => entry.uuid === uuid);
     if (!node) return;
+    state.selectedUuid = uuid;
     const snapshot = state.snapshots.get(uuid);
     const ping = state.pings.get(uuid);
     const health = getHealth(snapshot, ping);
@@ -609,6 +668,8 @@
   function scheduleRefresh() {
     window.clearInterval(state.timer);
     state.timer = window.setInterval(() => { if (!state.loading) loadFarm(false); }, getRefreshSeconds(state.settings) * 1000);
+    window.clearInterval(state.liveTimer);
+    state.liveTimer = window.setInterval(() => { void refreshLiveStatus(); }, LIVE_REFRESH_MS);
   }
 
   async function loadFarm(manual) {
@@ -636,6 +697,7 @@
       renderPlots();
       elements.updated.textContent = `最近巡田：${new Intl.DateTimeFormat("zh-CN", { hour: "2-digit", minute: "2-digit", second: "2-digit" }).format(new Date())}`;
       scheduleRefresh();
+      void refreshLiveStatus();
     } catch (error) {
       state.nodes = [];
       state.snapshots = new Map();
@@ -659,9 +721,14 @@
       applyScene(current);
     });
   });
-  elements.closeDialog.addEventListener("click", () => elements.dialog.close());
-  elements.dialog.addEventListener("click", (event) => { if (event.target === elements.dialog) elements.dialog.close(); });
-  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && state.lastLoaded && Date.now() - state.lastLoaded > 60000) loadFarm(false); });
+  elements.closeDialog.addEventListener("click", () => { state.selectedUuid = null; elements.dialog.close(); });
+  elements.dialog.addEventListener("click", (event) => { if (event.target === elements.dialog) { state.selectedUuid = null; elements.dialog.close(); } });
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") {
+      if (state.lastLoaded && Date.now() - state.lastLoaded > 60000) loadFarm(false);
+      else void refreshLiveStatus();
+    }
+  });
   applyScene(readScenePreference(), false);
   loadFarm(false);
 })();

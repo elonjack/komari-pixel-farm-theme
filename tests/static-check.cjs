@@ -11,7 +11,7 @@ const css = fs.readFileSync(path.join(root, "dist", "assets", "farm.css"), "utf8
 function assert(condition, message) { if (!condition) throw new Error(message); }
 
 assert(manifest.short === "pixel-farm-v2", "Theme short identifier must be pixel-farm-v2.");
-assert(manifest.version === "1.6.0", "The portable-archive release must be version 1.6.0.");
+assert(manifest.version === "1.7.0", "The live-telemetry release must be version 1.7.0.");
 assert(fs.existsSync(path.join(root, "dist", "index.html")), "dist/index.html is required.");
 assert(html.includes('class="farm-scenery"'), "The expandable farm scenery layer is required.");
 assert(html.includes('id="ping-tasks"'), "The Ping task detail panel is required.");
@@ -38,4 +38,6 @@ assert(!html.includes('id="moon-phase"'), "The fixed moon overlay must not block
 assert(css.includes("grid-template-columns: repeat(3"), "The farm layout must expand as a CSS grid.");
 assert(css.includes("grid-template-columns: repeat(2"), "The farm layout must adapt to smaller screens.");
 assert(js.includes('sign.append(createTextElement("span", "plot-name", node.name))'), "Field signposts must show only a node name.");
+assert(js.includes('"common:getNodesLatestStatus"'), "The theme must use Komari RPC2 for live status updates.");
+assert(js.includes("LIVE_REFRESH_MS = 2000"), "Live status refresh must run at a two-second cadence.");
 console.log("Static theme checks passed.");
